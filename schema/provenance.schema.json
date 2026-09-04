@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheBabelDragon/field-os/schema/provenance.schema.json",
+  "title": "Provenance",
+  "type": "object",
+  "required": ["class"],
+  "properties": {
+    "class": {
+      "type": "string",
+      "enum": ["physical", "derived", "synthetic", "remote", "replayed", "unknown"]
+    },
+    "source": { "type": "string" },
+    "instrument": { "type": "string" },
+    "node_id": { "type": "string" },
+    "system": { "type": "string" }
+  }
+}

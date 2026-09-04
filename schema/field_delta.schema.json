@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheBabelDragon/field-os/schema/field_delta.schema.json",
+  "title": "FieldDelta",
+  "type": "object",
+  "required": ["cell", "channel", "old", "new", "provenance"],
+  "properties": {
+    "cell": { "type": "string" },
+    "channel": { "type": "string" },
+    "old": { "type": "number" },
+    "new": { "type": "number" },
+    "source": { "type": "string" },
+    "sequence": { "type": "integer" },
+    "tick": { "type": "integer" },
+    "confidence": { "type": "number" },
+    "provenance": { "$ref": "provenance.schema.json" }
+  }
+}

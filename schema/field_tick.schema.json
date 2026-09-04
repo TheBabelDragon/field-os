@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheBabelDragon/field-os/schema/field_tick.schema.json",
+  "title": "FieldTick",
+  "type": "object",
+  "required": ["epoch", "sequence", "deltas"],
+  "properties": {
+    "epoch": { "type": "integer" },
+    "sequence": { "type": "integer" },
+    "dt": { "type": "number" },
+    "state_hash": { "type": "string" },
+    "audits": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "deltas": {
+      "type": "array",
+      "items": { "$ref": "field_delta.schema.json" }
+    }
+  }
+}
