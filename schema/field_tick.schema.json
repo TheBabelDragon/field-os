@@ -11,7 +11,12 @@
     "epoch": { "type": "integer", "minimum": 0 },
     "sequence": { "type": "integer", "minimum": 0 },
     "dt": { "type": "number" },
-    "state_hash": { "type": "string", "minLength": 1 },
+    "state_hash": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 16,
+      "description": "First 16 hex chars of SHA-256(canonical committed field state). Not a hash of this FieldTick object."
+    },
     "audits": {
       "type": "array",
       "items": { "type": "string" }

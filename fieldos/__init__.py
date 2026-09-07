@@ -11,7 +11,7 @@ from .types import (
     Provenance,
     SourceClass,
 )
-from .kernel import FieldKernel
+from .kernel import FieldKernel, committed_state_hash
 from .conservation import audit_tick
 from .replay import ReplayLog, replay
 from .bylight import (
@@ -35,6 +35,7 @@ __all__ = [
     "FieldDelta",
     "FieldTick",
     "FieldKernel",
+    "committed_state_hash",
     "audit_tick",
     "ReplayLog",
     "replay",

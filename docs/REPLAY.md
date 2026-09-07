@@ -23,6 +23,8 @@ LIVE HARDWARE
 3. `replayed` provenance replaces the original class on the *read path*
    so a replay cannot be mistaken for a fresh measurement.
 4. Same observations + same systems + same epoch → same state hash.
+   The hash is SHA-256 of committed `(cell, channel, value)` state,
+   not of the FieldTick JSON. See docs/CONTRACT.md.
 5. Divergence is reported as `(tick, cell, channel, expected, actual)`.
 
 `fieldos.replay` implements this for the host reference kernel.
