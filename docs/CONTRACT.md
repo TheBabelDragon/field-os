@@ -67,6 +67,45 @@ FieldDelta sort key, locked:
 
 Same observations in any arrival order must hash to the same tick.
 
+## state_hash
+
+`state_hash` is a digest of the *committed field state after the tick*,
+not a digest of the FieldTick JSON.
+
+```
+state_hash = SHA-256(canonical(committed state))[:16]
+```
+
+Committed state is the set of `(cell, channel, value)` triples that
+survived admission. Canonical form, locked for v0.1:
+
+```json
+{"contract":"0.1","state":[["c3-01","temperature","21.5"], ...]}
+```
+
+- rows sorted by `(cell, channel)`
+- values rendered with `.9g`
+- JSON separators `,` and `:`, object keys sorted
+
+Not in the digest:
+
+- FieldTick JSON shape or key order
+- `deltas` list order (the kernel re-sorts before apply)
+- `rejected`, `audits`, `dt`, `epoch`, `sequence`
+- wall-clock timestamps
+- provenance metadata
+- the previous hash
+- the `state_hash` field itself
+
+Invariant:
+
+```
+same initial state + same admitted deltas = same state_hash
+```
+
+Replay checks that invariant at every tick. Changing a committed value
+must change the hash. Changing envelope fields must not.
+
 ## Conservation audit
 
 Optional, recorded, not a rollback.
