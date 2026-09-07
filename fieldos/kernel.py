@@ -6,7 +6,8 @@ import os
 from typing import Iterable
 
 from .conservation import audit_tick
-from .types import FieldDelta, FieldTick, Observation, Provenance, SourceClass
+from .types import CONTRACT_VERSION, FieldDelta, FieldTick, Observation, Provenance
+from .validate import may_apply, validate_delta, validate_observation
 
 
 def _synthetic_allowed() -> bool:
@@ -15,7 +16,11 @@ def _synthetic_allowed() -> bool:
 
 
 class FieldKernel:
-    """Host reference: cells x channels -> values, with provenance and a log."""
+    """Authoritative host reference for the v0.1 admitted-field contract.
+
+    Observation -> admission + validation -> FieldDelta -> deterministic
+    ordering -> FieldTick -> replay.
+    """
 
     def __init__(self, allow_synthetic: bool | None = None) -> None:
         self.state: dict[tuple[str, str], float] = {}
@@ -24,18 +29,28 @@ class FieldKernel:
         self.sequence = 0
         self.log: list[FieldTick] = []
         self.observations: list[Observation] = []
+        self.rejects: list[str] = []
         self.allow_synthetic = (
             _synthetic_allowed() if allow_synthetic is None else allow_synthetic
         )
+        self.contract = CONTRACT_VERSION
 
     def get(self, cell: str, channel: str) -> float:
         return self.state.get((cell, channel), 0.0)
 
     def admit(self, obs: Observation) -> FieldDelta | None:
-        """Turn one observation into a FieldDelta. Reject illegal synthetic."""
-        if obs.provenance.is_synthetic and not self.allow_synthetic:
+        """Turn one observation into a FieldDelta, or reject it."""
+        reason = validate_observation(obs)
+        if reason is None:
+            reason = may_apply(
+                self.provenance.get((obs.cell, obs.channel_name)),
+                obs.provenance,
+                self.allow_synthetic,
+            )
+        if reason is not None:
+            self.rejects.append(f"{obs.cell}/{obs.channel_name}:{reason}")
             return None
-        cell = obs.node_id or obs.location.key()
+        cell = obs.cell
         channel = obs.channel_name
         old = self.get(cell, channel)
         delta = FieldDelta(
@@ -53,14 +68,30 @@ class FieldKernel:
         return delta
 
     def tick(self, deltas: Iterable[FieldDelta], dt: float = 0.0) -> FieldTick:
-        items = [d for d in deltas if d.old != d.new]
-        items.sort(key=lambda d: d.sort_key())
-        self.sequence += 1
+        pending = list(deltas)
         applied: list[FieldDelta] = []
-        for d in items:
-            if d.provenance.is_synthetic and not self.allow_synthetic:
+        rejected: list[str] = []
+
+        for d in pending:
+            reason = validate_delta(d)
+            if reason is None:
+                reason = may_apply(
+                    self.provenance.get((d.cell, d.channel)),
+                    d.provenance,
+                    self.allow_synthetic,
+                )
+            if reason is not None:
+                rejected.append(f"{d.cell}/{d.channel}:{reason}")
                 continue
-            key = (d.cell, d.channel)
+            first_touch = (d.cell, d.channel) not in self.state
+            if d.old == d.new and not first_touch:
+                continue
+            applied.append(d)
+
+        applied.sort(key=lambda d: d.sort_key())
+        self.sequence += 1
+        live_applied: list[FieldDelta] = []
+        for d in applied:
             current = self.get(d.cell, d.channel)
             live = FieldDelta(
                 cell=d.cell,
@@ -73,35 +104,47 @@ class FieldKernel:
                 tick=self.sequence,
                 confidence=d.confidence,
             )
-            self.state[key] = live.new
-            self.provenance[key] = live.provenance
-            applied.append(live)
-        audits = audit_tick(applied)
+            self.state[(d.cell, d.channel)] = live.new
+            self.provenance[(d.cell, d.channel)] = live.provenance
+            live_applied.append(live)
+
+        self.rejects.extend(rejected)
         record = FieldTick(
             epoch=self.epoch,
             sequence=self.sequence,
-            deltas=applied,
+            deltas=live_applied,
             dt=dt,
-            audits=audits,
+            audits=audit_tick(live_applied),
+            rejected=rejected,
+            contract=self.contract,
         )
         record.state_hash = self.hash_state()
         self.log.append(record)
         return record
 
     def ingest(self, observations: Iterable[Observation], dt: float = 0.0) -> FieldTick:
+        before = len(self.rejects)
         deltas = []
         for obs in observations:
             d = self.admit(obs)
             if d is not None:
                 deltas.append(d)
-        return self.tick(deltas, dt=dt)
+        tick = self.tick(deltas, dt=dt)
+        extra = self.rejects[before:]
+        if extra:
+            seen = set(tick.rejected)
+            tick.rejected = extra + [r for r in tick.rejected if r not in seen]
+        return tick
 
     def hash_state(self) -> str:
         items = sorted(
             (cell, channel, f"{value:.9g}")
             for (cell, channel), value in self.state.items()
         )
-        blob = json.dumps(items, separators=(",", ":")).encode("utf-8")
+        blob = json.dumps(
+            {"contract": self.contract, "state": items},
+            separators=(",", ":"),
+        ).encode("utf-8")
         return hashlib.sha256(blob).hexdigest()[:16]
 
     def snapshot(self) -> dict[str, float]:
