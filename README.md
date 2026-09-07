@@ -1,5 +1,7 @@
 # field-os
 
+**v0.1 — admitted field contract.**
+
 The engine should never know what a *thing* is.
 It should only know what state exists and what transformations are permitted.
 
@@ -39,40 +41,34 @@ This repository owns that contract. Implementations stay in their trees.
 ## Killer primitive: measurement, not simulation
 
 A node does not report `temperature = 31.2`.
-It reports an observation:
-
-```json
-{
-  "field": "temperature",
-  "channel": "temperature",
-  "location": {"kind": "node", "id": "c3-04"},
-  "value": 31.2,
-  "unit": "degC",
-  "uncertainty": 0.4,
-  "timestamp_ns": 1756930000000000000,
-  "field_epoch": 12,
-  "field_sequence": 18442,
-  "node_id": "c3-04",
-  "sequence": 901,
-  "provenance": {
-    "class": "physical",
-    "source": "sensor",
-    "instrument": "sht31",
-    "node_id": "c3-04"
-  }
-}
-```
-
-Same machinery ingests optical intensity, audio amplitude, accelerometer
-vectors, photodiode waveforms, motor position, CAN telemetry, ultrasonic
-echo, WiFi CSI. The kernel does not care.
+It reports an observation. Same machinery ingests optical intensity, audio,
+accelerometer vectors, photodiode waveforms, motor position, CAN telemetry,
+ultrasonic echo, WiFi CSI. The kernel does not care.
 
 ```
 SIMULATION     FieldView  → System → FieldDelta
 PHYSICAL       Sensor     → Observation → FieldDelta
 ```
 
-Two sources. One state-transition language.
+## v0.1 contract
+
+```
+Observation → admission + validation → FieldDelta
+    → deterministic ordering → FieldTick → replay
+```
+
+The test suite must prove:
+
+- Observation → FieldDelta
+- deterministic FieldDelta ordering
+- provenance survives transitions
+- synthetic ≠ physical
+- FieldTick replay is deterministic
+- conservation audit works
+- invalid observations are rejected
+- bylight observations enter the kernel
+
+See [docs/CONTRACT.md](docs/CONTRACT.md). Schemas in `schema/` are locked.
 
 ## Install / run
 
@@ -87,11 +83,11 @@ python3 examples/room_loop.py
 ## Layout
 
 ```
-docs/          manifesto, vocabulary, conservation, replay, bylight, stack map
-schema/        JSON Schema for Observation / FieldDelta / FieldTick
+docs/          manifesto, v0.1 contract, vocabulary, conservation, replay, bylight
+schema/        locked JSON Schema (Observation / FieldDelta / FieldTick / …)
 fieldos/       host reference kernel (Python)
 examples/      six-node room as a software field computer
-tests/         determinism, provenance, conservation, replay
+tests/         v0.1 contract suite
 ```
 
 ## Non-goals
@@ -100,5 +96,6 @@ tests/         determinism, provenance, conservation, replay
 - Do not hide analog PHY behind `LINK_UP`.
 - Do not let synthetic values silently become measured.
 - Do not make the cell a block type.
+- No ECS, renderer, world, network stack, or scheduler in this repo.
 
 See [docs/MANIFEST.md](docs/MANIFEST.md) and [docs/STACK.md](docs/STACK.md).
