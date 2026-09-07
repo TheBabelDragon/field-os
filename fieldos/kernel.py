@@ -9,6 +9,31 @@ from .conservation import audit_tick
 from .types import CONTRACT_VERSION, FieldDelta, FieldTick, Observation, Provenance
 from .validate import may_apply, validate_delta, validate_observation
 
+STATE_HASH_LEN = 16
+
+
+def committed_state_hash(
+    state: dict[tuple[str, str], float],
+    contract: str = CONTRACT_VERSION,
+) -> str:
+    """SHA-256 of the committed field state, not of a FieldTick.
+
+    Payload is the canonical JSON object
+    `{"contract": <version>, "state": [[cell, channel, value], ...]}`
+    with rows sorted by (cell, channel) and values rendered as `.9g`.
+    v0.1 stores the first 16 hex characters of the digest.
+    """
+    items = sorted(
+        (cell, channel, f"{value:.9g}")
+        for (cell, channel), value in state.items()
+    )
+    blob = json.dumps(
+        {"contract": contract, "state": items},
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()[:STATE_HASH_LEN]
+
 
 def _synthetic_allowed() -> bool:
     flag = os.getenv("FIELD_OS_ALLOW_SYNTHETIC") or os.getenv("METAFIELD_ALLOW_SYNTHETIC")
@@ -137,15 +162,7 @@ class FieldKernel:
         return tick
 
     def hash_state(self) -> str:
-        items = sorted(
-            (cell, channel, f"{value:.9g}")
-            for (cell, channel), value in self.state.items()
-        )
-        blob = json.dumps(
-            {"contract": self.contract, "state": items},
-            separators=(",", ":"),
-        ).encode("utf-8")
-        return hashlib.sha256(blob).hexdigest()[:16]
+        return committed_state_hash(self.state, self.contract)
 
     def snapshot(self) -> dict[str, float]:
         return {f"{c}/{ch}": v for (c, ch), v in sorted(self.state.items())}
