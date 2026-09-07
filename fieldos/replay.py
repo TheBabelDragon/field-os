@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from .kernel import FieldKernel
-from .types import FieldDelta, FieldTick, Observation, SourceClass
+from .types import FieldDelta, FieldTick, Observation
 
 
 @dataclass
@@ -18,6 +19,21 @@ class ReplayLog:
             observations=list(kernel.observations),
             ticks=list(kernel.log),
             hashes=[t.state_hash for t in kernel.log],
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "observations": [o.to_dict() for o in self.observations],
+            "ticks": [t.to_dict() for t in self.ticks],
+            "hashes": list(self.hashes),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ReplayLog":
+        return cls(
+            observations=[Observation.from_dict(o) for o in data.get("observations") or []],
+            ticks=[FieldTick.from_dict(t) for t in data.get("ticks") or []],
+            hashes=list(data.get("hashes") or []),
         )
 
 
@@ -36,18 +52,17 @@ def _replayed_delta(d: FieldDelta) -> FieldDelta:
 
 
 def replay(log: ReplayLog, allow_synthetic: bool = True) -> tuple[FieldKernel, list[str]]:
-    """Replay recorded ticks. Hashes must match.
+    """Feed recorded FieldTicks back into a fresh kernel.
 
-    allow_synthetic defaults True because a log already mixed sources;
-    the replayed provenance class is `replayed`, which is not synthetic.
+    Identical ticks must produce identical state_hash values.
+    Replayed provenance is never a new physical measurement.
     """
     kernel = FieldKernel(allow_synthetic=allow_synthetic)
     diffs: list[str] = []
     if log.ticks:
         for tick in log.ticks:
             kernel.epoch = tick.epoch
-            replayed = [_replayed_delta(d) for d in tick.deltas]
-            got = kernel.tick(replayed, dt=tick.dt)
+            got = kernel.tick([_replayed_delta(d) for d in tick.deltas], dt=tick.dt)
             if got.state_hash != tick.state_hash:
                 diffs.append(
                     f"tick {tick.epoch}.{tick.sequence} hash {got.state_hash} != {tick.state_hash}"
