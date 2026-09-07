@@ -2,17 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/TheBabelDragon/field-os/schema/field_delta.schema.json",
   "title": "FieldDelta",
+  "description": "field-os v0.1 proposed state transition. Sort key: cell, channel, source, sequence.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["cell", "channel", "old", "new", "provenance"],
   "properties": {
-    "cell": { "type": "string" },
-    "channel": { "type": "string" },
+    "cell": { "type": "string", "minLength": 1 },
+    "channel": { "type": "string", "minLength": 1 },
     "old": { "type": "number" },
     "new": { "type": "number" },
     "source": { "type": "string" },
-    "sequence": { "type": "integer" },
-    "tick": { "type": "integer" },
-    "confidence": { "type": "number" },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "tick": { "type": "integer", "minimum": 0 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
     "provenance": { "$ref": "provenance.schema.json" }
   }
 }

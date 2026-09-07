@@ -2,7 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/TheBabelDragon/field-os/schema/provenance.schema.json",
   "title": "Provenance",
+  "description": "field-os v0.1. Unlabeled is synthetic. Synthetic cannot become physical.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["class"],
   "properties": {
     "class": {
@@ -12,6 +14,10 @@
     "source": { "type": "string" },
     "instrument": { "type": "string" },
     "node_id": { "type": "string" },
-    "system": { "type": "string" }
+    "system": { "type": "string" },
+    "original_class": {
+      "type": "string",
+      "enum": ["physical", "derived", "synthetic", "remote", "replayed", "unknown"]
+    }
   }
 }

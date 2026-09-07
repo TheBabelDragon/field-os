@@ -2,26 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/TheBabelDragon/field-os/schema/observation.schema.json",
   "title": "Observation",
+  "description": "field-os v0.1 admitted measurement or claim.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["field", "value", "provenance"],
   "properties": {
     "field": { "type": "string", "minLength": 1 },
     "channel": { "type": "string" },
-    "location": {
-      "type": "object",
-      "properties": {
-        "kind": { "type": "string" },
-        "id": { "type": "string" },
-        "x": { "type": "number" },
-        "y": { "type": "number" },
-        "z": { "type": "number" }
-      }
-    },
+    "location": { "$ref": "location.schema.json" },
     "value": { "type": "number" },
     "unit": { "type": "string" },
     "uncertainty": { "type": "number", "minimum": 0 },
     "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-    "timestamp_ns": { "type": "integer" },
+    "timestamp_ns": { "type": "integer", "minimum": 0 },
     "field_epoch": { "type": "integer", "minimum": 0 },
     "field_sequence": { "type": "integer", "minimum": 0 },
     "node_id": { "type": "string" },

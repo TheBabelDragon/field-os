@@ -2,14 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/TheBabelDragon/field-os/schema/field_tick.schema.json",
   "title": "FieldTick",
+  "description": "field-os v0.1 atomic application of a sorted FieldDelta list.",
   "type": "object",
-  "required": ["epoch", "sequence", "deltas"],
+  "additionalProperties": false,
+  "required": ["contract", "epoch", "sequence", "deltas", "state_hash"],
   "properties": {
-    "epoch": { "type": "integer" },
-    "sequence": { "type": "integer" },
+    "contract": { "type": "string", "const": "0.1" },
+    "epoch": { "type": "integer", "minimum": 0 },
+    "sequence": { "type": "integer", "minimum": 0 },
     "dt": { "type": "number" },
-    "state_hash": { "type": "string" },
+    "state_hash": { "type": "string", "minLength": 1 },
     "audits": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rejected": {
       "type": "array",
       "items": { "type": "string" }
     },
