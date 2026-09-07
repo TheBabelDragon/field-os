@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheBabelDragon/field-os/schema/field_time.schema.json",
+  "title": "FieldTime",
+  "description": "field-os v0.1. Logical field time is not wall-clock time.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["epoch", "field_sequence"],
+  "properties": {
+    "epoch": { "type": "integer", "minimum": 0 },
+    "field_sequence": { "type": "integer", "minimum": 0 },
+    "node_sequence": { "type": "integer", "minimum": 0 },
+    "observation_sequence": { "type": "integer", "minimum": 0 },
+    "timestamp_ns": { "type": "integer", "minimum": 0 }
+  }
+}

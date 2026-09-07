@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TheBabelDragon/field-os/schema/location.schema.json",
+  "title": "Location",
+  "description": "field-os v0.1. A cell is an address, not an object type.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind"],
+  "properties": {
+    "kind": { "type": "string", "minLength": 1 },
+    "id": { "type": "string" },
+    "x": { "type": ["number", "null"] },
+    "y": { "type": ["number", "null"] },
+    "z": { "type": ["number", "null"] }
+  }
+}
